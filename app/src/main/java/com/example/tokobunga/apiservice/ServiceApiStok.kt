@@ -6,9 +6,12 @@ import retrofit2.http.*
 
 interface ServiceApiStok {
 
+    @FormUrlEncoded // Tambahkan ini
     @POST("stok_update.php")
     suspend fun updateStok(
-        @Body request: Map<String, String>
+        @Field("id_bunga") idBunga: Int,   // Gunakan Field, bukan Body Map
+        @Field("jumlah") jumlah: Int,
+        @Field("tipe") tipe: String
     ): Response<Void>
 
     @GET("log_stok_list.php")

@@ -72,20 +72,21 @@ fun FloristNavHost(
                 }
             )
         ) { backStackEntry ->
-            val idBunga =
-                backStackEntry.arguments?.getInt(DestinasiDetailBunga.ID_BUNGA) ?: 0
+            // 1. Ambil ID dari navigasi
+            val id = backStackEntry.arguments?.getInt(DestinasiDetailBunga.ID_BUNGA) ?: 0
 
             DetailBungaScreen(
+                idBunga = id, // <--- TAMBAHKAN INI (Ini yang menyebabkan error merah)
                 navigateBack = { navController.navigateUp() },
-                navigateToEdit = {
-                    navController.navigate("${DestinasiEditBunga.route}/$it")
+                navigateToEdit = { idDariScreen ->
+                    navController.navigate("${DestinasiEditBunga.route}/$idDariScreen")
                 },
-                navigateToStok = {
-                    navController.navigate("${DestinasiStok.route}/$it")
+                navigateToStok = { idDariScreen ->
+                    navController.navigate("${DestinasiStok.route}/$idDariScreen")
                 }
             )
         }
-
+        // ================= EDIT =================
         // ================= EDIT =================
         composable(
             route = DestinasiEditBunga.routeWithArg,
@@ -94,12 +95,15 @@ fun FloristNavHost(
                     type = NavType.IntType
                 }
             )
-        ) {
+        ) { backStackEntry ->
+            // 1. Ambil ID dari navigasi
+            val id = backStackEntry.arguments?.getInt(DestinasiEditBunga.ID_BUNGA) ?: 0
+
             EditBungaScreen(
-                navigateBack = { navController.navigateUp() }
+                idBunga = id, // <--- TAMBAHKAN INI agar error "No value passed" hilang
+                navigateBack = { navController.popBackStack() }
             )
         }
-
         // ================= STOK =================
         composable(
             route = DestinasiStok.routeWithArg,

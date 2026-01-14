@@ -11,14 +11,12 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 
 class EditBungaViewModel(
     private val repositoryBunga: RepositoryBunga
 ) : ViewModel() {
 
-    // ================= STATE =================
     var idBunga: Int = 0
         private set
 
@@ -36,39 +34,47 @@ class EditBungaViewModel(
 
     private var fotoFile: File? = null
 
-    // ================= LOAD DETAIL =================
-    fun loadBunga(bunga: Bunga) {
+    fun loadDataById(id: Int) {
+        viewModelScope.launch {
+            try {
+                val bunga = repositoryBunga.getDetailBunga(id)
+                loadBunga(bunga)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun loadBunga(bunga: Bunga) {
         idBunga = bunga.id_bunga
         nama = bunga.nama_bunga
         kategori = bunga.kategori
         harga = bunga.harga
-        stok = bunga.stok.toString()   // ✅ FIX
+        stok = bunga.stok.toString()
     }
 
-    // ================= HANDLER =================
     fun onNamaChange(value: String) { nama = value }
     fun onKategoriChange(value: String) { kategori = value }
     fun onHargaChange(value: String) { harga = value }
     fun onStokChange(value: String) { stok = value }
     fun onFotoSelected(file: File) { fotoFile = file }
 
-    // ================= SUBMIT =================
     fun updateBunga(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        if (nama.isBlank() || kategori.isBlank() || harga.isBlank()) {
-            onError("Data tidak boleh kosong")
+        if (nama.isBlank() || kategori.isBlank() || harga.isBlank() || stok.isBlank()) {
+            onError("Semua data wajib diisi!")
             return
         }
 
         viewModelScope.launch {
             try {
-                val namaRB = nama.toRequestBody("text/plain".toMediaTypeOrNull())
-                val kategoriRB = kategori.toRequestBody("text/plain".toMediaTypeOrNull())
-                val hargaRB = harga.toRequestBody("text/plain".toMediaTypeOrNull())
-                val stokRB = stok.toRequestBody("text/plain".toMediaTypeOrNull())
-
+                /**
+                 * PERBAIKAN:
+                 * Hapus semua kode .toRequestBody().
+                 * Langsung kirim variabel String ke Repository.
+                 */
                 val fotoPart = fotoFile?.let {
                     MultipartBody.Part.createFormData(
                         "foto",
@@ -77,18 +83,18 @@ class EditBungaViewModel(
                     )
                 }
 
+                // Panggil repository dengan parameter String murni
                 repositoryBunga.updateBunga(
-                    idBunga,
-                    namaRB,
-                    kategoriRB,
-                    hargaRB,
-                    stokRB,
-                    fotoPart
+                    id = idBunga,
+                    nama = nama,
+                    kategori = kategori,
+                    harga = harga,
+                    stok = stok,
+                    foto = fotoPart
                 )
-
                 onSuccess()
             } catch (e: Exception) {
-                onError(e.message ?: "Gagal update bunga")
+                onError(e.message ?: "Gagal memperbarui data bunga")
             }
         }
     }

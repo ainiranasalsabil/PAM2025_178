@@ -21,40 +21,54 @@ class HomeBungaViewModel(
     private val repositoryBunga: RepositoryBunga
 ) : ViewModel() {
 
-    // list asli dari server (tidak difilter)
     private var allBunga: List<Bunga> = emptyList()
 
-    // state yang ditampilkan ke UI
     var statusHome: StatusHomeBunga by mutableStateOf(StatusHomeBunga.Loading)
         private set
 
-    // query search
     var searchQuery by mutableStateOf("")
         private set
 
     init {
-        loadBunga()
+        getBunga()
     }
 
-    fun loadBunga() {
+    fun getBunga() {
         viewModelScope.launch {
             statusHome = StatusHomeBunga.Loading
-            statusHome = try {
-                allBunga = repositoryBunga.getListBunga()
-                StatusHomeBunga.Success(allBunga)
-            } catch (e: IOException) {
-                StatusHomeBunga.Error
-            } catch (e: HttpException) {
-                StatusHomeBunga.Error
+            try {
+                val response = repositoryBunga.getListBunga()
+
+                // SAMA DENGAN KONSEP DETAIL: Bersihkan karakter aneh
+                allBunga = response.map { bunga ->
+                    bunga.copy(
+                        nama_bunga = bunga.nama_bunga?.replace("\\", "")?.replace("\"", "") ?: "",
+                        kategori = bunga.kategori?.replace("\\", "")?.replace("\"", "") ?: "",
+                        harga = bunga.harga?.replace("\\", "")?.replace("\"", "") ?: "",
+                        // Foto diambil apa adanya dari PHP (yang sudah berisi Base URL)
+                        foto_bunga = bunga.foto_bunga?.replace("\\", "")?.replace("\"", "") ?: ""
+                    )
+                }
+                filterAndShow()
+            } catch (e: Exception) {
+                statusHome = StatusHomeBunga.Error
             }
         }
     }
 
-    fun onSearchQueryChange(query: String) {
-        searchQuery = query
-        val filtered = allBunga.filter {
-            it.nama_bunga.contains(query, ignoreCase = true)
+    fun onSearchQueryChange(newQuery: String) {
+        searchQuery = newQuery
+        filterAndShow()
+    }
+
+    private fun filterAndShow() {
+        val filteredList = if (searchQuery.isEmpty()) {
+            allBunga
+        } else {
+            allBunga.filter {
+                it.nama_bunga?.contains(searchQuery, ignoreCase = true) == true
+            }
         }
-        statusHome = StatusHomeBunga.Success(filtered)
+        statusHome = StatusHomeBunga.Success(filteredList)
     }
 }

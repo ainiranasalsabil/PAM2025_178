@@ -5,11 +5,11 @@ import com.example.tokobunga.modeldata.LogStok
 import retrofit2.Response
 
 interface RepositoryStok {
-
+    // PERBAIKAN: Gunakan tipe data Int untuk ID dan Jumlah agar sinkron
     suspend fun updateStok(
-        idBunga: String,
-        jenis: String,
-        jumlah: String
+        idBunga: Int,
+        tipe: String, // Sesuaikan nama parameter dengan PHP (tipe)
+        jumlah: Int
     ): Response<Void>
 
     suspend fun getLogStok(idBunga: Int): List<LogStok>
@@ -20,19 +20,22 @@ class JaringanRepositoryStok(
 ) : RepositoryStok {
 
     override suspend fun updateStok(
-        idBunga: String,
-        jenis: String,
-        jumlah: String
+        idBunga: Int,
+        tipe: String,
+        jumlah: Int
     ): Response<Void> {
-        val body = mapOf(
-            "id_bunga" to idBunga,
-            "jenis" to jenis,
-            "jumlah" to jumlah
+        /**
+         * PERBAIKAN:
+         * Tidak perlu lagi menggunakan mapOf().
+         * Langsung kirim parameter secara individual ke serviceApi.
+         */
+        return serviceApiStok.updateStok(
+            idBunga = idBunga,
+            jumlah = jumlah,
+            tipe = tipe
         )
-        return serviceApiStok.updateStok(body)
     }
 
     override suspend fun getLogStok(idBunga: Int): List<LogStok> =
         serviceApiStok.getLogStok(idBunga)
 }
-

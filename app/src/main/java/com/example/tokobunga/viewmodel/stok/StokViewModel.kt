@@ -11,7 +11,6 @@ import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
 
-// ================= STATUS UI =================
 sealed interface StatusStokUi {
     object Idle : StatusStokUi
     object Loading : StatusStokUi
@@ -23,22 +22,19 @@ class StokViewModel(
     private val repositoryStok: RepositoryStok
 ) : ViewModel() {
 
-    // ===== INPUT STATE =====
     var jumlah by mutableStateOf("")
         private set
 
-    var jenis by mutableStateOf("MASUK") // MASUK / KELUAR
+    // PERBAIKAN: Gunakan label yang sama dengan pilihan di PHP ("Masuk" / "Keluar")
+    var jenis by mutableStateOf("Masuk")
         private set
 
-    // ===== UI STATE =====
     var statusUi: StatusStokUi by mutableStateOf(StatusStokUi.Idle)
         private set
 
-    // ===== LOG STOK =====
     var logStok by mutableStateOf<List<LogStok>>(emptyList())
         private set
 
-    // ================= INPUT HANDLER =================
     fun onJumlahChange(value: String) {
         if (value.all { it.isDigit() }) {
             jumlah = value
@@ -49,22 +45,19 @@ class StokViewModel(
         jenis = value
     }
 
-    // ================= LOAD LOG =================
     fun loadLogStok(idBunga: Int) {
         viewModelScope.launch {
             try {
                 logStok = repositoryStok.getLogStok(idBunga)
             } catch (e: Exception) {
-                // log kosong saja, UI tidak crash
                 logStok = emptyList()
             }
         }
     }
 
-    // ================= UPDATE STOK =================
     fun submitStok(idBunga: Int) {
-        if (jumlah.isBlank()) {
-            statusUi = StatusStokUi.Error("Jumlah tidak boleh kosong")
+        if (jumlah.isBlank() || jumlah.toInt() <= 0) {
+            statusUi = StatusStokUi.Error("Jumlah harus lebih dari 0")
             return
         }
 
@@ -72,24 +65,29 @@ class StokViewModel(
 
         viewModelScope.launch {
             try {
+                /**
+                 * PERBAIKAN UTAMA:
+                 * Konversi idBunga dan jumlah menjadi Int sesuai kontrak Repository baru.
+                 * Pastikan parameter 'tipe' sesuai dengan yang diharapkan PHP.
+                 */
                 val response = repositoryStok.updateStok(
-                    idBunga = idBunga.toString(),
-                    jenis = jenis,
-                    jumlah = jumlah
+                    idBunga = idBunga,           // Sudah Int
+                    tipe = jenis,                // Kirim "Masuk" atau "Keluar"
+                    jumlah = jumlah.toInt()      // Konversi String ke Int
                 )
 
                 if (response.isSuccessful) {
                     statusUi = StatusStokUi.Success
-                    jumlah = ""
-                    loadLogStok(idBunga)
+                    jumlah = "" // Reset input
+                    loadLogStok(idBunga) // Refresh riwayat
                 } else {
-                    statusUi = StatusStokUi.Error("Gagal update stok")
+                    statusUi = StatusStokUi.Error("Gagal: Stok mungkin tidak cukup")
                 }
 
             } catch (e: IOException) {
-                statusUi = StatusStokUi.Error("Koneksi gagal")
-            } catch (e: HttpException) {
-                statusUi = StatusStokUi.Error("Server error")
+                statusUi = StatusStokUi.Error("Masalah koneksi internet")
+            } catch (e: Exception) {
+                statusUi = StatusStokUi.Error("Terjadi kesalahan: ${e.message}")
             }
         }
     }

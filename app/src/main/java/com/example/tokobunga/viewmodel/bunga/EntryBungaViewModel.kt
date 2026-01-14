@@ -1,6 +1,5 @@
 package com.example.tokobunga.viewmodel.bunga
 
-import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -9,10 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.tokobunga.repositori.RepositoryBunga
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 
 class EntryBungaViewModel(
@@ -40,20 +37,27 @@ class EntryBungaViewModel(
     ) {
         viewModelScope.launch {
             try {
-                val namaRB = nama.toRequestBody("text/plain".toMediaType())
-                val kategoriRB = kategori.toRequestBody("text/plain".toMediaType())
-                val hargaRB = harga.toRequestBody("text/plain".toMediaType())
-                val stokRB = stok.toInt().toString()
-                    .toRequestBody("text/plain".toMediaType())
-
+                /**
+                 * PERBAIKAN:
+                 * Tidak perlu lagi membuat namaRB, kategoriRB, dll.
+                 * Kita langsung membuat Part untuk FOTO saja.
+                 */
                 val fotoPart = MultipartBody.Part.createFormData(
                     "foto",
                     fileFoto.name,
                     fileFoto.asRequestBody("image/*".toMediaType())
                 )
 
+                /**
+                 * Panggil repository dengan String murni.
+                 * Stok dikirim sebagai String "10", nanti PHP yang melakukan intval().
+                 */
                 repositoryBunga.tambahBunga(
-                    namaRB, kategoriRB, hargaRB, stokRB, fotoPart
+                    nama = nama,
+                    kategori = kategori,
+                    harga = harga,
+                    stok = stok,
+                    foto = fotoPart
                 )
 
                 onSuccess()
@@ -63,4 +67,3 @@ class EntryBungaViewModel(
         }
     }
 }
-

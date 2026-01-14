@@ -2,7 +2,6 @@ package com.example.tokobunga.apiservice
 
 import com.example.tokobunga.modeldata.Bunga
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -16,24 +15,35 @@ interface ServiceApiBunga {
         @Query("id") idBunga: Int
     ): Bunga
 
+    /**
+     * PERBAIKAN FINAL: Menggunakan String agar sinkron dengan Repository.
+     * RequestBody dihapus karena menyebabkan mismatch tipe data di Android
+     * dan masalah tanda kutip ganda di database.
+     */
     @Multipart
     @POST("bunga_add.php")
     suspend fun tambahBunga(
-        @Part("nama_bunga") nama: RequestBody,
-        @Part("kategori") kategori: RequestBody,
-        @Part("harga") harga: RequestBody,
-        @Part("stok") stok: RequestBody,
+        @Part("nama_bunga") nama: String,
+        @Part("kategori") kategori: String,
+        @Part("harga") harga: String,
+        @Part("stok") stok: String,
         @Part foto: MultipartBody.Part
     ): Response<Void>
 
+    /**
+     * PERBAIKAN FINAL:
+     * - @Query("id") idBunga untuk menangkap $_GET['id'] di PHP.
+     * - Tipe data String untuk field teks.
+     * - MultipartBody.Part? (nullable) agar foto tidak wajib saat update.
+     */
     @Multipart
     @POST("bunga_update.php")
     suspend fun updateBunga(
         @Query("id") idBunga: Int,
-        @Part("nama_bunga") nama: RequestBody,
-        @Part("kategori") kategori: RequestBody,
-        @Part("harga") harga: RequestBody,
-        @Part("stok") stok: RequestBody,
+        @Part("nama_bunga") nama: String,
+        @Part("kategori") kategori: String,
+        @Part("harga") harga: String,
+        @Part("stok") stok: String,
         @Part foto: MultipartBody.Part?
     ): Response<Void>
 

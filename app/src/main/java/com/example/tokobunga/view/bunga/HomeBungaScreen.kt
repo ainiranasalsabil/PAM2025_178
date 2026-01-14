@@ -8,12 +8,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter // Pastikan import ini ada
 import com.example.tokobunga.modeldata.Bunga
 import com.example.tokobunga.view.components.FloristTopAppBar
 import com.example.tokobunga.viewmodel.bunga.HomeBungaViewModel
@@ -30,6 +32,10 @@ fun HomeBungaScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeBungaViewModel = viewModel(factory = PenyediaViewModel.Factory)
 ) {
+    LaunchedEffect(Unit) {
+        viewModel.getBunga()
+    }
+
     Scaffold(
         topBar = {
             FloristTopAppBar(
@@ -42,26 +48,22 @@ fun HomeBungaScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddClick) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Tambah Bunga"
-                )
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Tambah Bunga")
             }
         },
         modifier = modifier
     ) { innerPadding ->
-
         Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
-
             // ================= SEARCH =================
             OutlinedTextField(
                 value = viewModel.searchQuery,
-                onValueChange = viewModel::onSearchQueryChange,
+                // Pastikan di ViewModel namanya onSearchQueryChange
+                onValueChange = { viewModel.onSearchQueryChange(it) },
                 label = { Text("Cari bunga") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
@@ -71,34 +73,32 @@ fun HomeBungaScreen(
 
             // ================= LIST =================
             when (val state = viewModel.statusHome) {
-
                 is StatusHomeBunga.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
-
                 is StatusHomeBunga.Error -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Gagal memuat data")
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Gagal memuat data")
+                            Button(onClick = { viewModel.getBunga() }) { Text("Coba Lagi") }
+                        }
                     }
                 }
-
                 is StatusHomeBunga.Success -> {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(state.list, key = { it.id_bunga }) { bunga ->
-                            ItemBunga(
-                                bunga = bunga,
-                                onClick = { onItemClick(bunga.id_bunga) }
-                            )
+                    if (state.list.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Belum ada data bunga")
+                        }
+                    } else {
+                        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            items(state.list, key = { it.id_bunga }) { bunga ->
+                                ItemBunga(
+                                    bunga = bunga,
+                                    onClick = { onItemClick(bunga.id_bunga) }
+                                )
+                            }
                         }
                     }
                 }
@@ -107,6 +107,7 @@ fun HomeBungaScreen(
     }
 }
 
+// FUNGSI INI HARUS DI LUAR HomeBungaScreen
 @Composable
 fun ItemBunga(
     bunga: Bunga,
@@ -117,27 +118,29 @@ fun ItemBunga(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
+            // KONSEP SAMA DENGAN DETAIL: Langsung panggil model = bunga.foto_bunga
             AsyncImage(
                 model = bunga.foto_bunga,
                 contentDescription = bunga.nama_bunga,
-                modifier = Modifier.size(80.dp),
-                contentScale = ContentScale.Crop
+                modifier = Modifier
+                    .size(80.dp)
+                    .padding(4.dp),
+                contentScale = ContentScale.Crop,
+                placeholder = rememberAsyncImagePainter("https://via.placeholder.com/80"),
+                error = rememberAsyncImagePainter("https://via.placeholder.com/80?text=Error")
             )
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = bunga.nama_bunga,
+                    text = bunga.nama_bunga ?: "",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text("Harga : Rp ${bunga.harga}")
