@@ -48,5 +48,6 @@
 
     <!-- Validation -->
     <string name="required_field">Semua field wajib diisi</string>
+    <string name="kategori_tambah">Tambah Kategori</string>
 
 </resources>
