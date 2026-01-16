@@ -25,23 +25,38 @@ fun LaporanStokScreen(
     modifier: Modifier = Modifier,
     viewModel: LaporanStokViewModel = viewModel(factory = PenyediaViewModel.Factory)
 ) {
+    // ================= DATA FILTER =================
     val daftarBulan = listOf(
-        "Semua" to 0, "Januari" to 1, "Februari" to 2, "Maret" to 3,
-        "April" to 4, "Mei" to 5, "Juni" to 6, "Juli" to 7,
-        "Agustus" to 8, "September" to 9, "Oktober" to 10, "November" to 11, "Desember" to 12
+        "Semua" to 0,
+        "Januari" to 1,
+        "Februari" to 2,
+        "Maret" to 3,
+        "April" to 4,
+        "Mei" to 5,
+        "Juni" to 6,
+        "Juli" to 7,
+        "Agustus" to 8,
+        "September" to 9,
+        "Oktober" to 10,
+        "November" to 11,
+        "Desember" to 12
     )
 
     val jenisFilter = listOf("Semua", "Masuk", "Keluar")
 
+    // ================= STATE FILTER (UI) =================
     var expandedBulan by remember { mutableStateOf(false) }
     var expandedJenis by remember { mutableStateOf(false) }
+
+    var selectedBulan by remember { mutableStateOf(0) }
     var selectedJenis by remember { mutableStateOf("Semua") }
 
-    LaunchedEffect(Unit) {
-        viewModel.loadLog(0, 0)
+    // ================= LOAD DATA SAAT FILTER BERUBAH =================
+    LaunchedEffect(selectedBulan) {
+        viewModel.loadLog(0, selectedBulan)
     }
 
-    // ================= FILTER DATA =================
+    // ================= FILTER DATA JENIS =================
     val filteredLog = viewModel.listLog.filter { log ->
         when (selectedJenis) {
             "Masuk" -> log.tipe.lowercase() == "masuk"
@@ -50,6 +65,7 @@ fun LaporanStokScreen(
         }
     }
 
+    // ================= UI =================
     Scaffold(
         topBar = {
             FloristTopAppBar(
@@ -78,13 +94,13 @@ fun LaporanStokScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
 
-                    // FILTER BULAN
+                    // ---------- FILTER BULAN ----------
                     ExposedDropdownMenuBox(
                         expanded = expandedBulan,
                         onExpandedChange = { expandedBulan = !expandedBulan }
                     ) {
                         OutlinedTextField(
-                            value = daftarBulan.find { it.second == viewModel.selectedBulan }?.first ?: "Semua",
+                            value = daftarBulan.find { it.second == selectedBulan }?.first ?: "Semua",
                             onValueChange = {},
                             readOnly = true,
                             label = { Text("Filter Bulan") },
@@ -105,7 +121,7 @@ fun LaporanStokScreen(
                                 DropdownMenuItem(
                                     text = { Text(nama) },
                                     onClick = {
-                                        viewModel.loadLog(0, nilai)
+                                        selectedBulan = nilai
                                         expandedBulan = false
                                     }
                                 )
@@ -113,7 +129,7 @@ fun LaporanStokScreen(
                         }
                     }
 
-                    // FILTER JENIS
+                    // ---------- FILTER JENIS ----------
                     ExposedDropdownMenuBox(
                         expanded = expandedJenis,
                         onExpandedChange = { expandedJenis = !expandedJenis }
@@ -152,7 +168,7 @@ fun LaporanStokScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ================= LIST =================
+            // ================= LIST DATA =================
             if (filteredLog.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -194,6 +210,7 @@ fun ItemLogStok(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+
             Text(
                 text = log.nama_bunga,
                 fontWeight = FontWeight.Bold,
@@ -217,7 +234,7 @@ fun ItemLogStok(
             Text(
                 text = "Tanggal : ${log.tanggal}",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
